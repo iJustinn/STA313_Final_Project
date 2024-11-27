@@ -100,48 +100,48 @@
         ];
 
         /**
-         * 按权重调整比例的函数
-         * @param {Array} data - 原始数据数组
-         * @param {string} targetName - 要调整的目标名称
-         * @param {number} scaleFactor - 缩放因子（0-1之间）
-         * @returns {Array} - 返回调整后的新数据数组
+         * 
+         * @param {Array} data 
+         * @param {string} targetName 
+         * @param {number} scaleFactor 
+         * @returns {Array} 
          */
         function adjustProportionsWeighted(data, targetName, scaleFactor) {
-            // 深拷贝原始数据
+           
             const adjustedData = JSON.parse(JSON.stringify(data));
             
-            // 找到目标项
+          
             const target = adjustedData.find(item => item.name === targetName);
             if (!target) return adjustedData;
 
-            // 计算需要减少的量
+            
             const originalValue = target.proportion;
             const newValue = originalValue * scaleFactor;
             const difference = originalValue - newValue;
 
-            // 获取其他项及其总和
+           
             const otherItems = adjustedData.filter(item => item.name !== targetName);
             const othersTotal = otherItems.reduce((sum, item) => sum + item.proportion, 0);
 
-            // 按原始比例权重分配减少的量
+        
             otherItems.forEach(item => {
-                // 计算该项在其他项中的权重比例
+           
                 const weight = item.proportion / othersTotal;
-                // 按权重分配增加量
+                
                 item.proportion += difference * weight;
-                // 保留两位小数
+                
                 item.proportion = Number(item.proportion.toFixed(2));
             });
 
-            // 设置目标项的新值
+           
             target.proportion = Number(newValue.toFixed(2));
 
-            // 处理舍入误差，确保总和为100
+  
             const total = adjustedData.reduce((sum, item) => sum + item.proportion, 0);
             const error = Number((100 - total).toFixed(2));
             
             if (error !== 0) {
-                // 将误差添加到最大的非目标项上
+       
                 const maxOtherItem = otherItems.reduce((max, item) => 
                     item.proportion > max.proportion ? item : max, otherItems[0]);
                 maxOtherItem.proportion = Number((maxOtherItem.proportion + error).toFixed(2));
@@ -150,23 +150,22 @@
             return adjustedData;
         }
 
-        // 调整比例
         const adjustedToxinData = adjustProportionsWeighted(toxinData, "Lead", 0.88);
 
-        // 设置SVG尺寸
+
         const width = 300;
         const height = 800;
 
-        // 创建SVG元素
+
         const svg = d3.select("#visualization")
             .append("svg")
             .attr("width", width)
             .attr("height", height);
 
-        // 定义全局变量以便在函数中使用
+
         let defs, pathData;
 
-        // 加载外部SVG文件
+
         d3.xml("body.svg").then(function(data) {
             const originalSvg = data.documentElement;
             const viewBox = originalSvg.getAttribute("viewBox");
@@ -174,10 +173,10 @@
 
             pathData = originalSvg.querySelector("path").getAttribute("d");
 
-            // 创建渐变定义
+
             defs = svg.append("defs");
             
-            // 创建主渐变（修改这部分代码）
+
             const gradient = defs.append("linearGradient")
                 .attr("id", "toxinGradient")
                 .attr("gradientUnits", "userSpaceOnUse")
@@ -186,10 +185,10 @@
                 .attr("x2", "0%")
                 .attr("y2", "100%");
 
-            // 添加渐变色停止点，默认高亮 Mercury
+       
             let offset = 0;
             adjustedToxinData.forEach((toxin, i) => {
-                // 起始点
+   
                 gradient.append("stop")
                     .attr("offset", `${offset}%`)
                     .attr("stop-color", toxin.name === "Mercury" ? toxin.highlightColor : toxin.color)
@@ -197,14 +196,14 @@
 
                 offset += toxin.proportion;
 
-                // 结束点
+
                 gradient.append("stop")
                     .attr("offset", `${offset}%`)
                     .attr("stop-color", toxin.name === "Mercury" ? toxin.highlightColor : toxin.color)
                     .attr("stop-opacity", 0.9);
             });
 
-            // 绘制人体轮廓
+
             const bodyPath = svg.append("path")
                 .attr("d", pathData)
                 .style("fill", "url(#toxinGradient)")
@@ -218,11 +217,11 @@
                     let cumulativeProportion = 0;
                     let clickedToxin = null;
                     
-                    // 重置渐变
+  
                     const gradient = defs.select("#toxinGradient");
                     gradient.selectAll("*").remove();
                     
-                    // 重新创建渐变，但这次会高亮选中的部分
+        
                     let offset = 0;
                     adjustedToxinData.forEach((toxin, i) => {
                         const previousProportion = offset;
@@ -253,37 +252,34 @@
                     });
                     
                     if (clickedToxin) {
-                        // 更新文本块
+   
                         d3.select("#text-block").html(`<p>${clickedToxin.content}</p>`);
-                        
-                        // 更新图例样式
+             
                         d3.selectAll(".legend-item")
-                            .classed("active", false);  // 移除所有活动状态
+                            .classed("active", false);  
                         
                         d3.selectAll(".legend-item")
                             .filter(function() {
                                 return d3.select(this).select("span").text().startsWith(clickedToxin.name);
                             })
-                            .classed("active", true);  // 添加活动状态到选中项
+                            .classed("active", true);  
                     }
                 });
 
-            // 默认选择第一个毒素，显示文本并高亮第一个区域
             const defaultToxin = adjustedToxinData[0];
             d3.select("#text-block").html(`<p>${defaultToxin.content}</p>`);
 
-            // 创建图例 - 使用原始数据
+
             const legend = d3.select(".legend");
             toxinData.forEach(toxin => {
                 const legendItem = legend.append("div")
                     .attr("class", `legend-item ${toxin.name === "Mercury" ? "active" : ""}`)
                     .style("cursor", "pointer")
                     .on("click", function() {
-                        // 重置渐变
+ 
                         const gradient = defs.select("#toxinGradient");
                         gradient.selectAll("*").remove();
-                        
-                        // 重新创建渐变
+  
                         let offset = 0;
                         adjustedToxinData.forEach((t) => {
                             gradient.append("stop")
@@ -299,10 +295,10 @@
                                 .attr("stop-opacity", 0.9);
                         });
 
-                        // 更新文本块
+
                         d3.select("#text-block").html(`<p>${toxin.content}</p>`);
                         
-                        // 更新图例样式
+  
                         d3.selectAll(".legend-item")
                             .classed("active", false);
                         d3.select(this).classed("active", true);
