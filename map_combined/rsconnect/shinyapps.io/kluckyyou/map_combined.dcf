@@ -1,0 +1,12 @@
+name: map_combined
+title: map_combined
+username: kluckyyou
+account: kluckyyou
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13470870
+bundleId: 9430130
+url: https://kluckyyou.shinyapps.io/map_combined/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
