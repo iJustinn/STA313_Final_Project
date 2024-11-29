@@ -1,3 +1,4 @@
+# load libraries
 library(sf)
 library(dplyr)
 library(leaflet)
@@ -7,6 +8,7 @@ library(here)
 library(rmapshaper)
 library(shiny)
 
+# load data
 province_data <- readRDS("province_data.rds")
 provinces_with_data <- readRDS("provinces_with_data.rds")
 aggregated_data <- readRDS("aggregated_data.rds")
@@ -60,7 +62,7 @@ server <- function(input, output, session) {
         data = provinces_with_data,
         fillColor = ~colorNumeric("YlOrRd", total_quantity)(total_quantity),
         color = "white", weight = 1, fillOpacity = 0.7,
-        highlightOptions = highlightOptions(weight = 3, color = "blue", bringToFront = TRUE),
+        highlightOptions = highlightOptions(weight = 3, color = "red", bringToFront = TRUE),
         layerId = ~PREABBR  # Assign unique IDs for provinces
       ) %>%
       addLayersControl(
@@ -71,7 +73,7 @@ server <- function(input, output, session) {
         pal = colorNumeric("YlOrRd", domain = provinces_with_data$total_quantity),
         values = provinces_with_data$total_quantity,
         position = "bottomright",
-        title = "Total Emissions (grams)"
+        title = "Total Emissions (tons)"
       )
     
   })
@@ -92,7 +94,7 @@ server <- function(input, output, session) {
     
     # Update selected province details
     selected_province$name <- province_clicked
-    selected_province$emission <- paste(total_emission, "grams")
+    selected_province$emission <- paste(total_emission, "tons")
     
     # Update scatter point details
     selected_scatter$facility <- "Select a facility"
@@ -106,8 +108,8 @@ server <- function(input, output, session) {
       clearGroup("scatter") %>%
       addCircleMarkers(
         data = scatter_data,
-        radius = ~log(total_quantity + 1) * 0.6,
-        color = "#0073C2FF", stroke = FALSE, fillOpacity = 0.6,
+        radius = ~log(total_quantity + 1) * 3,
+        color = "black", stroke = FALSE, fillOpacity = 0.6,
         clusterOptions = markerClusterOptions(disableClusteringAtZoom = 18),
         layerId = ~facility,  # Set layer ID to facility for scatter info
         group = "scatter"

@@ -38,6 +38,12 @@ coor_data <- read_csv(here("data", "analysis_data", "map_coordinate_data.csv"), 
 cleaned_data <- read_csv(here("data", "analysis_data", "map_cleaned_data.csv"), show_col_types = FALSE)
 
 cleaned_data <- cleaned_data %>%
+  mutate(
+    quantity = quantity / 1e6,
+    unit = "tons"
+  )
+
+cleaned_data <- cleaned_data %>%
   mutate(facility = tolower(facility)) %>%
   group_by(NPRI_id, province, unit, facility, substance) %>%
   summarise(quantity = sum(quantity, na.rm = TRUE), .groups = "drop")
@@ -65,6 +71,13 @@ province_data <- combined_data %>%
 
 provinces_with_data <- provinces %>%
   left_join(province_data, by = c("PREABBR" = "province"))
+
+# Save the datasets
+saveRDS(aggregated_data, here("map_combined", "aggregated_data.rds"))
+saveRDS(province_data, here("map_combined", "province_data.rds"))
+saveRDS(provinces_with_data, here("map_combined", "provinces_with_data.rds"))
+saveRDS(scatter_data_sf, here("map_combined", "scatter_data_sf.rds"))
+
 
 # Define bounding box for Canada
 canada_bounds <- list(
