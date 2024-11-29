@@ -60,7 +60,7 @@ server <- function(input, output, session) {
       ) %>%
       addPolygons(
         data = provinces_with_data,
-        fillColor = ~colorNumeric("YlOrRd", total_quantity)(total_quantity),
+        fillColor = ~colorNumeric("Greys", total_quantity)(total_quantity),
         color = "white", weight = 1, fillOpacity = 0.7,
         highlightOptions = highlightOptions(weight = 3, color = "red", bringToFront = TRUE),
         layerId = ~PREABBR  # Assign unique IDs for provinces
@@ -70,7 +70,7 @@ server <- function(input, output, session) {
         options = layersControlOptions(collapsed = FALSE)
       ) %>%
       addLegend(
-        pal = colorNumeric("YlOrRd", domain = provinces_with_data$total_quantity),
+        pal = colorNumeric("Greys", domain = provinces_with_data$total_quantity),
         values = provinces_with_data$total_quantity,
         position = "bottomright",
         title = "Total Emissions (tons)"
@@ -109,7 +109,7 @@ server <- function(input, output, session) {
       addCircleMarkers(
         data = scatter_data,
         radius = ~log(total_quantity + 1) * 3,
-        color = "black", stroke = FALSE, fillOpacity = 0.6,
+        color = "red", stroke = FALSE, fillOpacity = 0.6,
         clusterOptions = markerClusterOptions(disableClusteringAtZoom = 18),
         layerId = ~facility,  # Set layer ID to facility for scatter info
         group = "scatter"
