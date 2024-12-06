@@ -362,10 +362,10 @@
             }
 
         }).catch(function(error) {
-            console.error("加载SVG文件出错:", error);
+            console.error("unable to load:", error);
             d3.select("#visualization")
                 .append("p")
-                .text("无法加载SVG文件。请确保文件路径正确且可访问。");
+                .text("unable to load");
         });
     </script>
 </body>
