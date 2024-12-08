@@ -14,6 +14,29 @@ provinces_with_data <- readRDS("provinces_with_data.rds")
 aggregated_data <- readRDS("aggregated_data.rds")
 scatter_data_sf <- readRDS("scatter_data_sf.rds")
 
+# Convert total_quantity from tons to ktons
+provinces_with_data <- provinces_with_data %>% 
+  mutate(total_quantity_ktons = total_quantity / 1000)
+
+# Calculate the average total emission across all provinces (in ktons)
+average_ktons <- mean(provinces_with_data$total_quantity_ktons, na.rm = TRUE)
+
+# Province name lookup
+province_names <- c(
+  "AB" = "Alberta",
+  "BC" = "British Columbia",
+  "MB" = "Manitoba",
+  "NB" = "New Brunswick",
+  "NL" = "Newfoundland and Labrador",
+  "NS" = "Nova Scotia",
+  "NT" = "Northwest Territories",
+  "NU" = "Nunavut",
+  "ON" = "Ontario",
+  "PE" = "Prince Edward Island",
+  "QC" = "Quebec",
+  "SK" = "Saskatchewan",
+  "YT" = "Yukon"
+)
 
 # Define bounding box for Canada
 canada_bounds <- list(
@@ -23,28 +46,52 @@ canada_bounds <- list(
   lat2 = 83     # Northernmost latitude
 )
 
-# Shiny UI
 ui <- fluidPage(
-  leafletOutput("map", height = "80vh"),
-  br(),
-  tags$div(
-    id = "province-info-box",
-    style = "padding: 10px; border: 1px solid #ccc; background: #f9f9f9; display: inline-block; margin-right: 20px;",
-    tags$p("Province: ", tags$span(uiOutput("province_name", inline = TRUE))),
-    tags$p("Total Emission: ", tags$span(uiOutput("province_emission", inline = TRUE)))
+  fluidRow(
+    # First column: Map
+    column(
+      width = 7, offset = 1,
+      style = "padding: 20px;",
+      leafletOutput("map", height = "90vh")
+    ),
+    # Second column: Info boxes
+    column(
+      width = 4,
+      # Add a scrollable container
+      div(
+        style = "max-height:90vh; overflow-y:auto; padding: 20px;",
+        
+        # Province info box
+        tags$div(
+          id = "province-info-box",
+          style = "padding: 10px; border: 1px solid #ccc; background: #f9f9f9; margin-bottom: 20px;",
+          tags$p("Province: ", tags$span(uiOutput("province_name", inline = TRUE))),
+          tags$p("Total Emission (ktons): ", tags$span(uiOutput("province_emission", inline = TRUE))),
+          tags$p("Difference from Average (ktons): ", tags$span(uiOutput("province_diff", inline = TRUE)))
+        ),
+        
+        # Scatter info box
+        tags$div(
+          id = "scatter-info-box",
+          style = "padding: 10px; border: 1px solid #ccc; background: #f9f9f9;",
+          tags$p("Facility: ", tags$span(uiOutput("scatter_facility", inline = TRUE))),
+          tags$p("Substance Info: ", tags$span(uiOutput("scatter_substance", inline = TRUE)))
+        )
+      )
+    )
   ),
-  tags$div(
-    id = "scatter-info-box",
-    style = "padding: 10px; border: 1px solid #ccc; background: #f9f9f9; display: inline-block;",
-    tags$p("Facility: ", tags$span(uiOutput("scatter_facility", inline = TRUE))),
-    tags$p("Substance Info: ", tags$span(uiOutput("scatter_substance", inline = TRUE)))
+  # Help button in the top-left corner
+  absolutePanel(
+    top = 10, left = 10, style = "z-index:500;",
+    actionButton("help_button", label = NULL, icon = icon("question-circle"), 
+                 style = "background-color: #fff; border: 1px solid #ccc; border-radius: 50%; width:40px; height:40px;")
   )
 )
 
 # Shiny Server
 server <- function(input, output, session) {
   # Reactive values to store info for province and scatter points
-  selected_province <- reactiveValues(name = "Select a province", emission = "N/A")
+  selected_province <- reactiveValues(name = "Select a province", emission = "N/A", diff = "N/A")
   selected_scatter <- reactiveValues(facility = "Select a facility", substance = "N/A")
   
   # Render the leaflet map
@@ -73,7 +120,7 @@ server <- function(input, output, session) {
         pal = colorNumeric("Greys", domain = provinces_with_data$total_quantity),
         values = provinces_with_data$total_quantity,
         position = "bottomright",
-        title = "Total Emissions (tons)"
+        title = "Total Emissions (ktons)"
       )
     
   })
@@ -81,6 +128,7 @@ server <- function(input, output, session) {
   # Update the province info box dynamically
   output$province_name <- renderUI({ HTML(selected_province$name) })
   output$province_emission <- renderUI({HTML(selected_province$emission)})
+  output$province_diff <- renderUI({ HTML(selected_province$diff) })
   
   # Update the scatter info box dynamically
   output$scatter_facility <- renderUI({ HTML(selected_scatter$facility) })
@@ -90,11 +138,18 @@ server <- function(input, output, session) {
   observeEvent(input$map_shape_click, {
     click <- input$map_shape_click
     province_clicked <- click$id  # Province ID (PREABBR)
-    total_emission <- provinces_with_data %>% filter(PREABBR == province_clicked) %>% pull(total_quantity)
+    total_emission <- provinces_with_data %>% filter(PREABBR == province_clicked) %>% pull(total_quantity_ktons)
+    diff_from_average <- total_emission - average_ktons
+    
+    # Get full province name
+    full_name <- province_names[province_clicked]
     
     # Update selected province details
-    selected_province$name <- province_clicked
-    selected_province$emission <- paste(total_emission, "tons")
+    selected_province$name <- full_name
+    selected_province$emission <- paste(round(total_emission, 3), "ktons")
+    selected_province$diff <- paste(round(diff_from_average, 3), "ktons")
+    
+    
     
     # Update scatter point details
     selected_scatter$facility <- "Select a facility"
@@ -127,6 +182,19 @@ server <- function(input, output, session) {
     # Update scatter point details
     selected_scatter$facility <- scatter_info$facility[1]
     selected_scatter$substance <- scatter_info$substances_info[1]
+  })
+  
+  # Handle "Help" button click
+  observeEvent(input$help_button, {
+    showModal(modalDialog(
+      title = "How to Use This App",
+      tags$p("1. Click on a province on the map to view its total emissions in ktons and how it compares to the average."),
+      tags$p("2. Once a province is selected, facility markers will appear. Click on a facility marker to view more details about its substance emissions."),
+      tags$p("3. Use the map controls to zoom and pan around."),
+      tags$p("4. The legend on the bottom right shows the scale for the total emissions (in ktons)."),
+      easyClose = TRUE,
+      footer = modalButton("Close")
+    ))
   })
 }
 
