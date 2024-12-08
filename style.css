@@ -9,14 +9,14 @@ body {
 }
 
 .sidebar {
-  background-color: #4c6ef5;
+  background-color: #757b96;
   padding: 1.25rem 0;
   color: white;
   min-height: 100vh;
 }
 
 .top-bar {
-  background-color: #4c6ef5 !important;
+  background-color: #7e8397 !important;
   position: fixed;
   top: 0;
   width: 100%;
@@ -35,7 +35,7 @@ h4{
 .top-bar-button{
   float: left !important;
   color: white !important; /* Match text color */
-  background-color: #4c6ef5; /* Match sidebar button background color */
+  background-color: #8c909e; /* Match sidebar button background color */
   padding: 0.3125rem 1.25rem; /* Adjust padding to match sidebar */
   margin-right: 1.25rem; /* Provide some margin around the buttons */
   border-radius: 0.625rem; /* Match the border-radius for rounded corners */
@@ -44,7 +44,7 @@ h4{
 }
 
 .top-bar-button:hover{
-  background-color: #6579f5; /* Slightly lighter color on hover, similar to sidebar behavior */
+  background-color: #4f5266; /* Slightly lighter color on hover, similar to sidebar behavior */
   text-decoration: none; /* Ensure no underline on hover */
 }
 
@@ -60,11 +60,11 @@ h4{
 }
 
 .sidebar .nav-link:hover {
-  background-color: #6579f5;
+  background-color: #50525e;
 }
 
 .active {
-  background-color: #3748b5;
+  background-color: #474b61;
 }
 
 .logo-dashboard {
@@ -104,7 +104,7 @@ h4{
   width: 100%;
   text-align: center;
   padding: 0.625rem 0;
-  background-color: #4c6ef5;
+  background-color: #757b96;
 }
 
 .main-content {
@@ -156,7 +156,7 @@ h4{
     width: 100%; /* Full width */
     height: 100%; /* Full screen height */
     overflow-y: auto; /* Enable scrolling */
-    background-color: #4c6ef5; /* Sidebar background color */
+    background-color: #5c6172; /* Sidebar background color */
     z-index: 1001; /* Ensure it's above other content */
     padding-top: 40px; /* Adjust based on your top bar height */
   }
