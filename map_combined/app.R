@@ -7,6 +7,8 @@ library(readr)
 library(here)
 library(rmapshaper)
 library(shiny)
+library(waiter)
+
 
 # load data
 province_data <- readRDS("province_data.rds")
@@ -47,6 +49,17 @@ canada_bounds <- list(
 )
 
 ui <- fluidPage(
+  use_waiter(),  # Include waiter
+  
+  # Show a loading screen on app load with a spinner and custom message
+  waiterShowOnLoad(
+    html = tagList(
+      spin_ellipsis(),    # a spinner
+      h3("Currently Loading, please wait...")
+    ),
+    color = "#333"        # background color
+  ),
+  
   fluidRow(
     # First column: Map
     column(
@@ -91,8 +104,8 @@ ui <- fluidPage(
 # Shiny Server
 server <- function(input, output, session) {
   # Reactive values to store info for province and scatter points
-  selected_province <- reactiveValues(name = "Select a province", emission = "N/A", diff = "N/A")
-  selected_scatter <- reactiveValues(facility = "Select a facility", substance = "N/A")
+  selected_province <- reactiveValues(name = "No province selected", emission = "N/A", diff = "N/A")
+  selected_scatter <- reactiveValues(facility = "No facility selected", substance = "N/A")
   
   # Render the leaflet map
   output$map <- renderLeaflet({
@@ -124,6 +137,11 @@ server <- function(input, output, session) {
       )
     
   })
+  observe({
+    if (!is.null(input$map_bounds)) {
+      waiter_hide() 
+    }
+  })
   
   # Update the province info box dynamically
   output$province_name <- renderUI({ HTML(selected_province$name) })
@@ -141,13 +159,22 @@ server <- function(input, output, session) {
     total_emission <- provinces_with_data %>% filter(PREABBR == province_clicked) %>% pull(total_quantity_ktons)
     diff_from_average <- total_emission - average_ktons
     
+    # Determine color based on difference from average
+    color <- if (diff_from_average < 0) {
+      "green"
+    } else if (diff_from_average > 0) {
+      "red"
+    } else {
+      "black"
+    }
+    
     # Get full province name
     full_name <- province_names[province_clicked]
     
     # Update selected province details
     selected_province$name <- full_name
     selected_province$emission <- paste(round(total_emission, 3), "ktons")
-    selected_province$diff <- paste(round(diff_from_average, 3), "ktons")
+    selected_province$diff <- paste0("<span style='color:", color, "'>", round(diff_from_average, 3), " ktons</span>")
     
     
     

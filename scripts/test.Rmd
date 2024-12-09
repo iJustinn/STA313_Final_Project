@@ -52,13 +52,34 @@ combined_data <- cleaned_data %>%
   inner_join(coor_data, by = c("NPRI_id", "province")) %>%
   filter(!is.na(latitude) & !is.na(longitude))
 
+# Calculate national averages for each substance
+substance_means <- cleaned_data %>%
+  group_by(substance) %>%
+  summarise(avg_qty = mean(quantity, na.rm = TRUE), .groups = "drop")
+
+# Join the averages to combined_data
+combined_data <- combined_data %>%
+  left_join(substance_means, by = "substance") %>%
+  mutate(
+    diff_from_avg = quantity - avg_qty,
+    diff_color = case_when(
+      diff_from_avg < 0 ~ "green",
+      diff_from_avg > 0 ~ "red",
+      TRUE ~ "black"
+    ),
+    # Create the fully formatted HTML string for each substance line
+    substance_line = paste0(
+      "Substance: ", substance, "<br>",
+      "Emission Quantity: ", round(quantity, 3), " ", unit, "<br>",
+      "Difference from avg: <span style='color:", diff_color, "'>",
+      round(diff_from_avg, 3), " ", unit, "</span>"
+    )
+  )
+
 aggregated_data <- combined_data %>%
   group_by(facility, province, latitude, longitude) %>%
   summarise(
-    substances_info = paste(
-      "Substance: ", substance, "<br>",
-      "Emission Quantity: ", quantity, unit, collapse = "<br><br>"
-    ),
+    substances_info = paste("<br>", substance_line, collapse = "<br>"),
     total_quantity = sum(quantity, na.rm = TRUE),
     .groups = "drop"
   )
@@ -77,8 +98,9 @@ saveRDS(aggregated_data, here("map_combined", "aggregated_data.rds"))
 saveRDS(province_data, here("map_combined", "province_data.rds"))
 saveRDS(provinces_with_data, here("map_combined", "provinces_with_data.rds"))
 saveRDS(scatter_data_sf, here("map_combined", "scatter_data_sf.rds"))
+```
 
-
+```{r}
 # Define bounding box for Canada
 canada_bounds <- list(
   lng1 = -141,  # Westernmost longitude
