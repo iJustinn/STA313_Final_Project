@@ -128,7 +128,14 @@ server <- function(input, output, session) {
   # Update the province info box dynamically
   output$province_name <- renderUI({ HTML(selected_province$name) })
   output$province_emission <- renderUI({HTML(selected_province$emission)})
-  output$province_diff <- renderUI({ HTML(selected_province$diff) })
+  
+  # Change begins here
+  output$province_diff <- renderUI({
+    diff_value <- as.numeric(sub(" ktons", "", selected_province$diff)) # Extract numeric value
+    color <- ifelse(diff_value < 0, "green", "red") # Choose color based on value
+    HTML(paste0("<span style='color:", color, ";'>", selected_province$diff, "</span>"))
+  })
+  # Change ends here
   
   # Update the scatter info box dynamically
   output$scatter_facility <- renderUI({ HTML(selected_scatter$facility) })
@@ -148,8 +155,6 @@ server <- function(input, output, session) {
     selected_province$name <- full_name
     selected_province$emission <- paste(round(total_emission, 3), "ktons")
     selected_province$diff <- paste(round(diff_from_average, 3), "ktons")
-    
-    
     
     # Update scatter point details
     selected_scatter$facility <- "Select a facility"
